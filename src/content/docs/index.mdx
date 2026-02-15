@@ -1,40 +1,49 @@
 ---
-title: Welcome to Starlight
-description: Get started building your docs site with Starlight.
-template: splash # Remove or comment out this line to display the site sidebar on this page.
+title: Open Social
+description: Community management infrastructure for ATProto applications.
+template: splash
 hero:
-  tagline: Congrats on setting up a new Starlight project!
-  image:
-    file: ../../assets/houston.webp
+  tagline: Build communities on the AT Protocol. Open Social provides the APIs and infrastructure to create, manage, and grow communities for your ATProto applications.
   actions:
-    - text: Example Guide
-      link: /guides/example/
+    - text: Get Started
+      link: /getting-started/overview/
       icon: right-arrow
-    - text: Read the Starlight docs
-      link: https://starlight.astro.build
+    - text: Login
+      link: https://app.opensocial.community
       icon: external
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Next steps
+## Why Open Social?
 
 <CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Change page layout" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
+  <Card title="App Registration" icon="setting">
+    Register your ATProto application and get an API key to start building community features into your app.
+  </Card>
+  <Card title="Community Creation" icon="add-document">
+    Create communities with their own ATProto identity — each community gets a DID, handle, and PDS-backed data store.
+  </Card>
+  <Card title="Membership Management" icon="approve-check-circle">
+    Manage community members with support for open, admin-approved, and private community types.
+  </Card>
+  <Card title="Record Storage" icon="document">
+    Store and retrieve ATProto records in community repositories. Define your own collections or use the built-in lexicons.
+  </Card>
+  <Card title="Admin Controls" icon="star">
+    Assign multiple admins, manage permissions, and moderate your communities with fine-grained access controls.
+  </Card>
+  <Card title="Built on ATProto" icon="open-book">
+    Fully integrated with the AT Protocol. Communities are real ATProto accounts with portable, user-owned data.
+  </Card>
 </CardGrid>
+
+## Quick Start
+
+1. **Register your app** — Create an account and [register your application](/apps/register/) to get an API key.
+2. **Create a community** — Use the API to [create a community](/communities/create/) with a handle and profile.
+3. **Add members** — Let users [join communities](/communities/members/) and manage membership.
+4. **Store data** — Create and manage [ATProto records](/communities/records/) in community repositories.
+
+Ready to dive in? Check out the [full API reference](/reference/api-endpoints/).

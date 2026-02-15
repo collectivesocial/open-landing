@@ -1,0 +1,54 @@
+/* Open Social Custom Starlight Theme */
+
+:root {
+  --sl-color-accent-low: #2a1a0e;
+  --sl-color-accent: #c2703e;
+  --sl-color-accent-high: #f5d6b8;
+  --sl-color-white: #faf6f1;
+  --sl-color-gray-1: #ede6dd;
+  --sl-color-gray-2: #c4b8aa;
+  --sl-color-gray-3: #8a7d6f;
+  --sl-color-gray-4: #5c5047;
+  --sl-color-gray-5: #3d342d;
+  --sl-color-gray-6: #2a231d;
+  --sl-color-black: #1a1511;
+  --sl-font: system-ui, -apple-system, sans-serif;
+}
+
+:root[data-theme="light"] {
+  --sl-color-accent-low: #f5e6d6;
+  --sl-color-accent: #c2703e;
+  --sl-color-accent-high: #5a2d10;
+  --sl-color-white: #1a1511;
+  --sl-color-gray-1: #3d342d;
+  --sl-color-gray-2: #5c5047;
+  --sl-color-gray-3: #8a7d6f;
+  --sl-color-gray-4: #c4b8aa;
+  --sl-color-gray-5: #ede6dd;
+  --sl-color-gray-6: #f5f0ea;
+  --sl-color-black: #faf6f1;
+}
+
+.hero {
+  padding-block: 3rem;
+}
+
+.sl-link-button {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sl-link-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(194, 112, 62, 0.3);
+}
+
+starlight-tabs,
+.expressive-code {
+  border-radius: 8px;
+}
+
+.card {
+  border-radius: 12px;
+}
