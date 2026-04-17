@@ -44,6 +44,10 @@
   box-shadow: 0 4px 12px rgba(194, 112, 62, 0.3);
 }
 
+.sl-link-button.minimal {
+  padding: 0.5rem 0.75rem;
+}
+
 starlight-tabs,
 .expressive-code {
   border-radius: 8px;
