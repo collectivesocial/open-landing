@@ -81,3 +81,58 @@ These can be created by any member but only updated by admins:
 ## Webhook Notifications
 
 When records are created, updated, or deleted, registered webhooks receive notifications with events: `record.created`, `record.updated`, `record.deleted`.
+
+## Shared Content
+
+The shared content endpoints allow members to share external AT Protocol records (e.g. standard.site blog posts) with a community. These use session-based authentication and the system app for permission checks.
+
+### List Shared Content
+
+```http
+GET /api/v1/communities/:did/content?limit=50&cursor=...
+```
+
+Returns:
+```json
+{
+  "records": [
+    {
+      "uri": "at://did:plc:community/community.opensocial.sharedContent/abc",
+      "rkey": "abc",
+      "type": "document",
+      "documentUri": "at://did:plc:user/site.standard.document/xyz",
+      "documentCid": "bafyrei...",
+      "sharedBy": "did:plc:user123",
+      "title": "My Blog Post",
+      "path": "/a/xyz-my-blog-post",
+      "sharedAt": "2026-04-17T00:00:00.000Z"
+    }
+  ],
+  "cursor": "..."
+}
+```
+
+### Share Content
+
+```http
+POST /api/v1/communities/:did/content
+{
+  "userDid": "did:plc:member123",
+  "type": "document",
+  "documentUri": "at://did:plc:member123/site.standard.document/xyz",
+  "documentCid": "bafyrei...",
+  "title": "My Blog Post",
+  "path": "/a/xyz-my-blog-post"
+}
+```
+
+Requires `member` role (default). Returns `409` if the document is already shared with this community.
+
+### Remove Shared Content (Admin)
+
+```http
+DELETE /api/v1/communities/:did/content/:rkey
+{ "userDid": "did:plc:admin123" }
+```
+
+Requires `admin` role (default). Hard-deletes the wrapper record from the community's repo.

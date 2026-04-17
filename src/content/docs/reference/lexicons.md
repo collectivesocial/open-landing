@@ -129,3 +129,38 @@ An item in a community list.
   "addedAt": "2025-01-01T00:00:00.000Z"
 }
 ```
+
+## community.opensocial.sharedContent
+
+Stored in the **community's** PDS repo. A wrapper record that references external content (e.g. a standard.site document) shared by a member. Deleting this record removes the content from the community.
+
+```json
+{
+  "$type": "community.opensocial.sharedContent",
+  "type": "document",
+  "documentUri": "at://did:plc:user123/site.standard.document/3mjpdo4ylyy23",
+  "documentCid": "bafyrei...",
+  "sharedBy": "did:plc:user123",
+  "title": "My Blog Post Title",
+  "path": "/a/3mjpdo4ylyy23-my-blog-post",
+  "sharedAt": "2026-04-17T00:00:00.000Z"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | string | Content type: `document`, `event` (open enum — extensible) |
+| documentUri | string (at-uri) | AT-URI of the source record |
+| documentCid | string | CID of the source record at time of sharing |
+| sharedBy | string (did) | DID of the member who shared the content |
+| title | string | Cached title (max 512 graphemes) |
+| path | string | Cached URL path (max 1024 graphemes, optional) |
+| sharedAt | datetime | When the content was shared |
+
+### Content Sharing Model
+
+Content sharing uses a single-record model in the community repo:
+
+- A **member** shares content → `sharedContent` record is created in the community's repo
+- A **community admin** can remove shared content by deleting the record
+- Permissions are managed via the **system app** (`app_system`) and can be customized per community
