@@ -23,11 +23,8 @@ Open Social requests **granular permissions** following the [AT Protocol permiss
 |-------|---------|
 | `atproto` | Required base scope for all AT Proto OAuth flows |
 | `repo:community.opensocial.membership` | Write membership records to the user's own repo (join/leave communities) |
-| `transition:generic` | Legacy full-access fallback for PDS compatibility during the transition to granular scopes |
 
 Open Social **only** writes `community.opensocial.membership` records to your personal repository. All other data (profiles, admin lists, membership proofs, community records) is managed by the community's own AT Protocol account — not your personal account.
-
-The `transition:generic` scope is included temporarily for backward compatibility with PDS implementations that don't yet support granular scopes. It will be removed once granular scope support is widespread.
 
 ### Permission Set
 
