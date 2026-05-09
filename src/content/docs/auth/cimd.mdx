@@ -5,9 +5,21 @@ description: Authenticate requests to Open Social by signing them with an asymme
 
 import { Steps, Aside, Tabs, TabItem } from "@astrojs/starlight/components";
 
+**Audience:** Developers integrating server-to-server authentication with Open Social who need request signing, replay protection, or cannot use long-lived shared secrets.
+
 CIMD (Client ID Metadata Document) authentication pairs a public key registered in a hosted JSON document with [HTTP Message Signatures](https://www.rfc-editor.org/rfc/rfc9421) (RFC 9421). Your private key never leaves your server — only a cryptographic signature travels over the wire.
 
-Before choosing this method, see [Authentication Overview](auth/index) for a comparison with API Keys.
+Before choosing this method, see [Authentication Overview](/auth/) for a comparison with API Keys.
+
+## Quick reference
+
+| Aspect | Value |
+|--------|-------|
+| **Supported algorithms** | Ed25519 (recommended), ECDSA P-256, RSA-PSS |
+| **Signature validity window** | 5 minutes (300 seconds) |
+| **CIMD formats** | `/.well-known/client-metadata.json` or `did:web` at `/.well-known/did.json` |
+| **Required headers** | `Signature-Input`, `Signature`; `Content-Digest` for POST/PUT/PATCH |
+| **Fetch timeout** | 5 seconds |
 
 ## How it works
 
@@ -173,12 +185,6 @@ Generate signature ──request──▶ Fetch CIMD from your domain
 
 ## Security properties
 
-<Aside type="note">
-  HTTP Message Signatures include a `created` timestamp. Open Social rejects
-  signatures older than **5 minutes** (300 seconds) or more than 30 seconds in
-  the future. Ensure your server clock is synchronized (NTP or equivalent).
-</Aside>
-
 | Property                       | Detail                                                                                                               |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
 | **Replay protection**          | The `created` field in `Signature-Input` bounds each signature to a 5-minute window                                  |
@@ -186,6 +192,12 @@ Generate signature ──request──▶ Fetch CIMD from your domain
 | **Key compromise**             | Rotate by publishing a new key in your JWKS; signatures with expired `created` timestamps are automatically rejected |
 | **Algorithm support**          | Ed25519 (recommended), ECDSA P-256, and RSA-PSS                                                                      |
 | **SSRF protection**            | Open Social only fetches CIMD documents from public HTTPS URLs — localhost and private IP ranges are rejected        |
+
+<Aside type="tip" title="Clock synchronization">
+  HTTP Message Signatures include a `created` timestamp. Open Social rejects
+  signatures older than **5 minutes** (300 seconds) or more than 30 seconds in
+  the future. Ensure your server clock is synchronized (NTP or equivalent).
+</Aside>
 
 ## Key rotation
 
@@ -200,20 +212,26 @@ Open Social caches CIMD documents briefly and retries with a fresh fetch on the 
 
 ## Hosting requirements
 
-Your CIMD must be:
+Your CIMD document must be:
 
-- Served over HTTPS
-- Accessible without authentication (public read)
+- Served over **HTTPS** (localhost and private IPs rejected)
+- Publicly accessible without authentication
 - Returned with `Content-Type: application/json`
 - Responsive within **5 seconds** (Open Social's fetch timeout)
 
 If your CIMD is unreachable at registration time, registration will fail with a `400` error. If it becomes unreachable after registration, authenticated requests will be rejected until the document is restored.
 
-<Aside type="note">
+<Aside type="note" title="Alternative: did:web">
   Open Social also supports `did:web` documents at `/.well-known/did.json` as an
   alternative to `client-metadata.json`. Both formats are tried automatically if
   no explicit `cimdUrl` is registered.
 </Aside>
+
+## Related pages
+
+- [Authentication Overview](/auth/) — compare API Keys vs CIMD
+- [API Keys](/auth/api-keys/) — simpler alternative if you don't need request signing
+- [Register an App](/apps/register/) — app registration flow (works with either auth method)
 
 ---
 
