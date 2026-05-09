@@ -1,0 +1,47 @@
+---
+title: Authentication
+description: API key and CIMD HTTP Message Signature authentication for Open Social apps
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Open Social supports two first-class authentication methods for server-to-server API access. Neither is legacy — choose based on your security requirements and operational constraints.
+
+## Comparison
+
+| | **API Key** | **CIMD / HTTP Signatures** |
+|---|---|---|
+| **Setup complexity** | Low — register your app, store one key | Higher — generate a signing key pair, host a Client ID Metadata Document |
+| **Secret handling** | Pre-shared secret sent in headers | Private key never leaves your server; only a signature travels over the wire |
+| **Replay protection** | None by default | Built-in — each request carries a time-bounded signature |
+| **Key rotation** | Call the rotate endpoint; brief downtime possible | Replace your JWKS; old signatures rejected automatically after expiry |
+| **Best for** | Internal tooling, rapid prototyping, trusted server environments | Public-facing bots, regulated environments, zero-trust architectures |
+
+## When to choose API Key
+
+- Your server environment is fully trusted and isolated
+- You need to get a working integration running quickly
+- You don't have infrastructure to host a Client ID Metadata Document
+- Key rotation downtime is acceptable
+
+## When to choose CIMD
+
+- You are building a public integration or bot where key leakage risk is higher
+- Your security policy prohibits long-lived shared secrets
+- You need replay protection without additional middleware
+- You want deterministic, auditable request signing
+
+## Explore the methods
+
+<CardGrid>
+  <Card title="API Keys" icon="puzzle">
+    Register your app and authenticate requests with a pre-shared key in the `X-Api-Key` header.
+
+    [Go to API Keys →](auth/api-keys)
+  </Card>
+  <Card title="CIMD / HTTP Signatures" icon="lock">
+    Sign each request with an asymmetric key pair. Your private key stays on your server.
+
+    [Go to CIMD →](auth/cimd)
+  </Card>
+</CardGrid>

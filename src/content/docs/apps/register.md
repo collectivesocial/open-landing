@@ -5,7 +5,9 @@ description: How to register your application with Open Social
 
 ## Prerequisites
 
-You need an AT Protocol account (e.g., Bluesky) to register an app. Log in to the Open Social web app first.
+You need an AT Protocol account (e.g., a Bluesky account) to register an app. Log in to the Open Social web app first.
+
+After registering, you'll receive an API key. Open Social also supports [CIMD / HTTP Signature authentication](auth/cimd) — see [Authentication](auth/index) for a comparison of both methods before deciding which to use.
 
 ## Register Your App
 

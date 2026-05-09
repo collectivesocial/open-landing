@@ -1,0 +1,133 @@
+---
+title: API Keys
+description: Authenticate server-to-server requests to Open Social using a pre-shared API key.
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+API Key authentication is the fastest path to a working server-to-server integration with Open Social. You register your app once, receive a key, and include it on every request.
+
+Before choosing this method, see [Authentication Overview](auth/index) for a comparison with CIMD / HTTP Signatures.
+
+## Prerequisites
+
+You need an AT Protocol account (e.g., a Bluesky account) to register an app. Authenticate via OAuth in the Open Social web app before proceeding.
+
+## Setup
+
+<Steps>
+
+1. **Register your app**
+
+   Send a `POST` request to `/api/v1/apps/register` with your app name and domain:
+
+   ```http title="Register app"
+   POST /api/v1/apps/register
+   Content-Type: application/json
+
+   {
+     "name": "My Community Bot",
+     "domain": "bot.example.com"
+   }
+   ```
+
+   The response contains your app ID and a plaintext API key:
+
+   ```json title="Registration response"
+   {
+     "app": {
+       "appId": "app_a1b2c3d4e5f6g7h8",
+       "name": "My Community Bot",
+       "domain": "bot.example.com",
+       "apiKey": "osc_abc123...",
+       "createdAt": "2025-01-01T00:00:00.000Z"
+     },
+     "message": "Store the api_key securely — treat it like a password."
+   }
+   ```
+
+   <Aside type="caution">
+   The API key is shown **once** at creation. Copy it to a secrets manager or environment variable before closing this response. You cannot retrieve it again — only rotate it.
+   </Aside>
+
+2. **Store the key securely**
+
+   Treat your API key like a password. Store it in an environment variable or secrets manager — never commit it to source control.
+
+   ```bash title="Set as environment variable"
+   export OPEN_SOCIAL_API_KEY="osc_abc123..."
+   ```
+
+3. **Include the key in every request**
+
+   Add the key as the `X-Api-Key` header on all authenticated API calls:
+
+   ```http title="Authenticated request"
+   GET /api/v1/communities
+   X-Api-Key: osc_abc123...
+   ```
+
+4. **Verify the key works**
+
+   Confirm the key is valid before relying on it in production:
+
+   ```http title="Key verification"
+   POST /api/v1/apps/verify
+   X-Api-Key: osc_abc123...
+   ```
+
+   A valid key returns:
+
+   ```json title="Verification response"
+   {
+     "valid": true,
+     "app": {
+       "appId": "app_a1b2c3d4e5f6g7h8",
+       "name": "My Community Bot",
+       "domain": "bot.example.com"
+     }
+   }
+   ```
+
+</Steps>
+
+## Key format
+
+API keys use the format `osc_` followed by 64 hex characters. On the server side, keys are stored as SHA-256 hashes — the plaintext is only available at creation time.
+
+## Validation rules
+
+| Field | Requirement |
+|-------|-------------|
+| `name` | 3–100 characters; alphanumeric with spaces, hyphens, and underscores |
+| `domain` | Valid domain format (e.g., `myapp.example.com`) |
+
+Duplicate active domains are rejected.
+
+## Rate limits
+
+API Key routes are rate-limited to **100 requests per minute** per app. Auth endpoints have a stricter limit of 20 requests per 15 minutes. Per-app custom limits can be configured on request.
+
+## API Key endpoints
+
+| Action | Method + path | Auth required |
+|--------|---------------|---------------|
+| Register app | `POST /api/v1/apps/register` | OAuth session |
+| List your apps | `GET /api/v1/apps` | OAuth session |
+| Rotate key | `POST /api/v1/apps/:appId/rotate-key` | OAuth session |
+| Verify key | `POST /api/v1/apps/verify` | API Key |
+| Deactivate app | `DELETE /api/v1/apps/:appId` | OAuth session |
+
+## Rotating your key
+
+If a key is compromised or you need to cycle it for compliance, use the rotate endpoint:
+
+```http title="Rotate key"
+POST /api/v1/apps/:appId/rotate-key
+```
+
+This invalidates the previous key immediately and returns a new plaintext key. Plan for a brief window where in-flight requests using the old key may be rejected.
+
+## CSRF protection
+
+API Key requests are exempt from CSRF token requirements — the key itself is the credential, and server-to-server calls don't carry browser cookies. Browser-session (OAuth) requests do require a CSRF token.

@@ -23,17 +23,18 @@ Open Social is an Express.js API server backed by PostgreSQL. It acts as a bridg
 
 ```
 Your App  ──▶  Open Social API  ──▶  AT Protocol (PDS)
-              (REST + API Key)       (Community accounts)
+         (REST + API Key or CIMD)    (Community accounts)
 ```
 
 ### Authentication
 
-There are two authentication modes:
+There are two server-to-server authentication methods, plus OAuth for end-user login:
 
 1. **OAuth Session** — Used for end-user login flows through the web app. Users authenticate with their ATProto handle via OAuth.
-2. **API Key** — Used for programmatic access from your application. Pass your key in the `X-Api-Key` header.
+2. **API Key** — Pass a pre-shared key in the `X-Api-Key` header. Low setup overhead, suitable for trusted server environments.
+3. **CIMD / HTTP Signatures** — Sign each request with an asymmetric key pair. Your private key stays on your server; only a cryptographic signature travels over the wire.
 
-Most API endpoints that your app will call use API Key authentication. See [Authentication](/getting-started/authentication/) for details.
+See [Authentication](auth/index) for a full comparison and setup guides for each method.
 
 ### Communities as ATProto Accounts
 
@@ -64,6 +65,7 @@ curl https://api.opensocial.community:8443/health
 
 ## Next Steps
 
-- [Set up authentication](/getting-started/authentication/) for your app
-- [Register your application](/apps/register/) to get an API key
-- Browse the [full API endpoint reference](/reference/api-endpoints/)
+- [Review authentication options](auth/index) — API Key or CIMD, explained side by side
+- [Set up API Key authentication](auth/api-keys) — if you want the fastest path to a working integration
+- [Set up CIMD authentication](auth/cimd) — if you need request signing and replay protection
+- Browse the [full API endpoint reference](reference/api-endpoints)
