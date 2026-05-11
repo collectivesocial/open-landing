@@ -37,7 +37,14 @@ export default defineConfig({
           label: "Getting Started",
           items: [
             { label: "Overview", slug: "getting-started/overview" },
-            { label: "Authentication", slug: "getting-started/authentication" },
+          ],
+        },
+        {
+          label: "Authentication",
+          items: [
+            { label: "Overview", slug: "auth" },
+            { label: "API Keys", slug: "auth/api-keys" },
+            { label: "CIMD", slug: "auth/cimd" },
           ],
         },
         {

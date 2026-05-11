@@ -1,0 +1,238 @@
+---
+title: CIMD / HTTP Message Signatures
+description: Authenticate requests to Open Social by signing them with an asymmetric key pair using Client ID Metadata Document and HTTP Message Signatures.
+---
+
+import { Steps, Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+**Audience:** Developers integrating server-to-server authentication with Open Social who need request signing, replay protection, or cannot use long-lived shared secrets.
+
+CIMD (Client ID Metadata Document) authentication pairs a public key registered in a hosted JSON document with [HTTP Message Signatures](https://www.rfc-editor.org/rfc/rfc9421) (RFC 9421). Your private key never leaves your server — only a cryptographic signature travels over the wire.
+
+Before choosing this method, see [Authentication Overview](/auth/) for a comparison with API Keys.
+
+## Quick reference
+
+| Aspect | Value |
+|--------|-------|
+| **Supported algorithms** | Ed25519 (recommended), ECDSA P-256, RSA-PSS |
+| **Signature validity window** | 5 minutes (300 seconds) |
+| **CIMD formats** | `/.well-known/client-metadata.json` or `did:web` at `/.well-known/did.json` |
+| **Required headers** | `Signature-Input`, `Signature`; `Content-Digest` for POST/PUT/PATCH |
+| **Fetch timeout** | 5 seconds |
+
+## How it works
+
+1. You generate an asymmetric key pair (Ed25519, ECDSA P-256, or RSA-PSS).
+2. You host the public key in a JSON document at a well-known URL on your domain — the **Client ID Metadata Document**.
+3. For each request, your server signs a canonical representation of the request (method, path, and a `created` timestamp) using the private key.
+4. Open Social fetches your CIMD, verifies the signature, and checks that the `created` timestamp is within the allowed window (prevents replay attacks).
+
+```
+Your server                    Open Social API
+───────────                    ───────────────
+Generate signature ──request──▶ Fetch CIMD from your domain
+  (private key)                 Verify signature (public key)
+                                Check created timestamp
+                    ◀─response─ Proceed or reject
+```
+
+## Prerequisites
+
+- A domain you control with HTTPS (needed to host the CIMD)
+- The ability to generate and store an asymmetric key pair
+- Your app registered with Open Social using `authMethod: "http_signature"` (see below)
+
+## Setup
+
+<Steps>
+
+1. **Generate a key pair**
+
+   Generate an Ed25519 key pair. Keep the private key out of source control.
+
+   ```bash title="Generate Ed25519 key pair (OpenSSL)"
+   # Generate private key
+   openssl genpkey -algorithm Ed25519 -out private.pem
+
+   # Extract the public key
+   openssl pkey -in private.pem -pubout -out public.pem
+   ```
+
+   <Aside type="caution">
+     Store `private.pem` in a secrets manager or encrypted environment variable.
+     Anyone who obtains it can sign requests as your app.
+   </Aside>
+
+2. **Create and host the Client ID Metadata Document**
+
+   Publish a JSON document at `https://yourdomain.example.com/.well-known/client-metadata.json`. The document declares your app's identity and public key set.
+
+   ```json title="/.well-known/client-metadata.json"
+   {
+     "client_id": "https://yourdomain.example.com/.well-known/client-metadata.json",
+     "client_name": "My Community Bot",
+     "jwks": {
+       "keys": [
+         {
+           "kty": "OKP",
+           "crv": "Ed25519",
+           "use": "sig",
+           "kid": "key-2026-05-08",
+           "x": "<base64url-encoded-public-key>"
+         }
+       ]
+     }
+   }
+   ```
+
+   The `client_id` should match the URL where the document is hosted. Open Social fetches this URL to retrieve your public key.
+
+   <Aside type="note">
+     The `kid` (key ID) field links signatures to specific keys. Use a date-stamped or versioned `kid` so you can publish a new key alongside an old one during rotation.
+
+     Open Social also accepts `did:web` documents at `/.well-known/did.json` as an alternative CIMD format. The `authentication` or `assertionMethod` verification relationship is used to select the signing key.
+   </Aside>
+
+3. **Register your app with CIMD**
+
+   When registering your app, set `authMethod` to `"http_signature"` and supply your CIMD URL. Open Social probes the URL at registration time — the document must be publicly reachable before you register.
+
+   ```http title="Register app with HTTP signature auth"
+   POST /api/v1/apps/register
+   Content-Type: application/json
+   Cookie: <session cookie>
+
+   {
+     "name": "My Community Bot",
+     "domain": "yourdomain.example.com",
+     "authMethod": "http_signature",
+     "cimdUrl": "https://yourdomain.example.com/.well-known/client-metadata.json"
+   }
+   ```
+
+   The `cimdUrl` hostname must match the registered `domain`. A successful response:
+
+   ```json title="Registration response"
+   {
+     "app": {
+       "app_id": "app_a1b2c3d4e5f6g7h8",
+       "name": "My Community Bot",
+       "domain": "yourdomain.example.com",
+       "auth_method": "http_signature",
+       "cimd_url": "https://yourdomain.example.com/.well-known/client-metadata.json",
+       "created_at": "2026-05-09T17:00:00.000Z"
+     },
+     "message": "App registered with HTTP signature auth. Publish your CIMD document at your domain."
+   }
+   ```
+
+   <Aside type="note">
+     HTTP-signature-only apps receive no API key. Authentication is exclusively
+     via signed requests.
+   </Aside>
+
+4. **Sign your requests**
+
+   For each API call, generate an HTTP Message Signature. The signature must cover at minimum `@method` and one of `@path` or `@target-uri`. POST/PUT/PATCH requests must also cover `content-digest`.
+
+   <Tabs>
+     <TabItem label="Without signature (rejected)">
+     ```http title="Unsigned request — will be rejected"
+     GET /api/v1/communities HTTP/1.1
+     Host: api.opensocial.community
+     ```
+     </TabItem>
+     <TabItem label="With signature (accepted)">
+     ```http title="Signed GET request"
+     GET /api/v1/communities HTTP/1.1
+     Host: api.opensocial.community
+     Signature-Input: sig1=("@method" "@path");created=1746763200;keyid="app_a1b2c3d4e5f6g7h8"
+     Signature: sig1=:base64encodedSignatureHere==:
+     ```
+     </TabItem>
+   </Tabs>
+
+   The `keyid` in `Signature-Input` should be your `app_id` or your app's `domain`. Open Social uses this to look up your registered app and fetch your CIMD.
+
+5. **Verify your setup**
+
+   Send a signed request to the verification endpoint to confirm Open Social can fetch your CIMD and validate your signature:
+
+   ```http title="Verify HTTP signature auth"
+   POST /api/v1/apps/verify HTTP/1.1
+   Host: api.opensocial.community
+   Signature-Input: sig1=("@method" "@path" "content-digest");created=1746763200;keyid="app_a1b2c3d4e5f6g7h8"
+   Content-Digest: sha-256=:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=:
+   Signature: sig1=:base64encodedSignatureHere==:
+   ```
+
+   A successful response:
+
+   ```json title="Verification response"
+   {
+     "valid": true,
+     "auth_method": "http_signature",
+     "app": {
+       "appId": "app_a1b2c3d4e5f6g7h8",
+       "name": "My Community Bot",
+       "domain": "yourdomain.example.com"
+     }
+   }
+   ```
+
+</Steps>
+
+## Security properties
+
+| Property                       | Detail                                                                                                               |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| **Replay protection**          | The `created` field in `Signature-Input` bounds each signature to a 5-minute window                                  |
+| **In-transit confidentiality** | Signing does not encrypt — use HTTPS for confidentiality                                                             |
+| **Key compromise**             | Rotate by publishing a new key in your JWKS; signatures with expired `created` timestamps are automatically rejected |
+| **Algorithm support**          | Ed25519 (recommended), ECDSA P-256, and RSA-PSS                                                                      |
+| **SSRF protection**            | Open Social only fetches CIMD documents from public HTTPS URLs — localhost and private IP ranges are rejected        |
+
+<Aside type="tip" title="Clock synchronization">
+  HTTP Message Signatures include a `created` timestamp. Open Social rejects
+  signatures older than **5 minutes** (300 seconds) or more than 30 seconds in
+  the future. Ensure your server clock is synchronized (NTP or equivalent).
+</Aside>
+
+## Key rotation
+
+To rotate without downtime:
+
+1. Generate a new key pair.
+2. Add the new public key to your CIMD `jwks.keys` array with a new `kid`.
+3. Update your signing code to use the new private key and `kid`.
+4. After the 5-minute signature window has passed, remove the old key from the JWKS.
+
+Open Social caches CIMD documents briefly and retries with a fresh fetch on the first verification failure, so in-flight requests signed with the old key will continue to validate during rotation.
+
+## Hosting requirements
+
+Your CIMD document must be:
+
+- Served over **HTTPS** (localhost and private IPs rejected)
+- Publicly accessible without authentication
+- Returned with `Content-Type: application/json`
+- Responsive within **5 seconds** (Open Social's fetch timeout)
+
+If your CIMD is unreachable at registration time, registration will fail with a `400` error. If it becomes unreachable after registration, authenticated requests will be rejected until the document is restored.
+
+<Aside type="note" title="Alternative: did:web">
+  Open Social also supports `did:web` documents at `/.well-known/did.json` as an
+  alternative to `client-metadata.json`. Both formats are tried automatically if
+  no explicit `cimdUrl` is registered.
+</Aside>
+
+## Related pages
+
+- [Authentication Overview](/auth/) — compare API Keys vs CIMD
+- [API Keys](/auth/api-keys/) — simpler alternative if you don't need request signing
+- [Register an App](/apps/register/) — app registration flow (works with either auth method)
+
+---
+
+_Source of truth: `open-social/src/lib/cimd.ts`, `open-social/src/lib/httpSig.ts`, `open-social/src/routes/apps.ts`, `open-social/src/validation/schemas.ts`. Last verified: 2026-05-09._
